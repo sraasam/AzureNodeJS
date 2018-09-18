@@ -5,6 +5,10 @@ var bodyParser = require('body-parser');
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
+app.get("/", (req, res) => {
+    res.sendFile(__dirname + "/index.html");
+});
+
 //Load the respective models 
 const customerModule = require('./models/customers');
 const custBudgetModule = require('./models/customerBudget');
@@ -34,9 +38,7 @@ var custOrderSchema = new mongoose.Schema(custOrderModule);
 var CustOrder = mongoose.model('customerorders', custOrderSchema);
 
 
-app.get("/", (req, res) => {
-    res.sendFile(__dirname + "/index.html");
-});
+
 
 app.get("/displayReport", (req, res) => {
     /*console.log(req.query.reportType);
