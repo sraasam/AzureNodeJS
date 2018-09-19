@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Maestro Analytics</title>
+    <script src="https://code.jquery.com/jquery-3.3.1.js"></script>
+    <script src="https://cdn.datatables.net/1.10.19/js/jquery.dataTables.min.js"></script>
+
+    <script src="https://cdn.datatables.net/buttons/1.5.2/js/dataTables.buttons.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.1.3/jszip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.36/pdfmake.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.36/vfs_fonts.js"></script>
+    <script src="https://cdn.datatables.net/buttons/1.5.2/js/buttons.html5.min.js"></script>
+
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.10.19/css/jquery.dataTables.min.css">
+    <link rel="stylesheet" href="https://cdn.datatables.net/buttons/1.5.2/css/buttons.dataTables.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.1.1/css/bootstrap.css">
+    <!--  <link rel="stylesheet" href="https://cdn.datatables.net/1.10.19/css/dataTables.bootstrap4.min.css"> -->
+
+    <script type="text/javascript">
+        $.fn.dataTable.ext.errMode = 'none';
+
+        var getJSON = function (url, successHandler, errorHandler) {
+            var e = document.getElementById("scenarioLst");
+            var value = e.options[e.selectedIndex].value;
+            var stDate = document.getElementById("startDate").value;
+            var endDate = document.getElementById("endDate").value;
+
+            var newurl = 'http://localhost:3000/displayReport?reportType=' + value + '&stDate=' + stDate + '&endDate=' + endDate;
+
+            var xhr = new XMLHttpRequest();
+            xhr.open('get', newurl, true);
+            // xhr.responseType = 'json';
+            xhr.onload = function () {
+                var status = xhr.status;
+                if (status == 200) {
+                    successHandler && successHandler(JSON.stringify(xhr.response));
+                    var respTest = [];
+                    var testArr = [], colArr = [];
+                    var parsedResponse = JSON.parse(xhr.response);
+                    switch (value) {
+                        case 'customers':
+                            testArr = parsedCustomerResponse(parsedResponse, testArr);
+                            colArr = [{ sTitle: "PA Code" }, { sTitle: "First Name" }, { sTitle: "Last Name" }, { sTitle: "Sales Rep Id" }, { sTitle: "Date" }, { sTitle: "Source" }];
+                            break;
+                        case 'customer_checkins':
+                            testArr = parsedChkinResponse(parsedResponse, testArr);
+                            colArr = [{ sTitle: "PA Code" }, { sTitle: "Checkin Time" }, { sTitle: "Checkout Time" }, { sTitle: "Sales Rep Id" }, { sTitle: "Date" }];
+                            break;
+                        case 'customer_vehicle_searches':
+                            testArr = parsedVehSearchResponse(parsedResponse, testArr);
+                            break;
+                        case 'customer_purchase':
+                            testArr = parsedPurchaseResponse(parsedResponse, testArr);
+                            colArr = [{ sTitle: "PA Code" }, { sTitle: "CustomerName" }, { sTitle: "Vehicle" }, { sTitle: "Sales Rep Id" }, { sTitle: "Date" }];
+                            break;
+                        case 'customer_appointments':
+                            testArr = parsedApptsResponse(parsedResponse, testArr);
+                            colArr = [{ sTitle: "PA Code" }, { sTitle: "Source" }, { sTitle: "Appointment Time" }, { sTitle: "Sales Rep Id" }, { sTitle: "Date" }];
+                            break;
+                    }
+
+                    $('#DisplayResultsTab').DataTable({
+                        "destroy": true,
+                        "aaData": testArr,
+                        "responsive": true,
+                        "columns": colArr,
+                        "bLengthChange": false,
+                        "bPaginate": true,
+                        "bInfo": false,
+                        "autoWidth": false,
+                        // "order": [[0, "desc"]],
+                        // "processing": true,
+                        //"serverSide": true,
+                        "dom": 'Bfrtip',
+                        "buttons": [
+                            // 'copyHtml5',
+                            'excelHtml5',
+                            //'csvHtml5',
+                            'pdfHtml5'
+                        ]
+
+                    })
+                } else {
+                    errorHandler && errorHandler(status);
+                }
+            };
+            xhr.send();
+        };
+
+        function parsedCustomerResponse(parsedResponse, testArr) {
+            if (parsedResponse instanceof Array) {
+                for (i = 0; i < parsedResponse.length; i++) {
+                    var respObj = parsedResponse[i];
+                    var testObj = {};
+                    var dateObj = new Date(parsedResponse[i].createdAt);
+                    var dateStr = (dateObj.getMonth() + 1) + "-" + dateObj.getDate() + "-" + dateObj.getFullYear();
+                    testObj.pacode = parsedResponse[i].pacode;
+                    testObj.lastName = parsedResponse[i].data.lastName.value;
+                    testObj.firstName = parsedResponse[i].data.firstName.value;
+                    testObj.checkedInBy = parsedResponse[i].checkedInBy;
+                    testObj.date = dateStr;
+                    testObj.source = parsedResponse[i].source;
+                    testArr.push(Object.values(testObj));
+
+                }
+
+            }
+            return testArr;
+        }
+
+        function parsedChkinResponse(parsedResponse, testArr) {
+            if (parsedResponse instanceof Array) {
+                for (i = 0; i < parsedResponse.length; i++) {
+                    var respObj = parsedResponse[i];
+                    var testObj = {};
+                    var dateObj = new Date(parsedResponse[i].createdAt);
+                    var dateStr = (dateObj.getMonth() + 1) + "-" + dateObj.getDate() + "-" + dateObj.getFullYear();
+                    testObj.pacode = parsedResponse[i].pacode;
+                    testObj.checkinTime = new Date(parsedResponse[i].checkinTime).toLocaleString();
+                    testObj.checkoutTime = new Date(parsedResponse[i].checkoutTime).toLocaleString();
+                    testObj.checkedInBy = parsedResponse[i].salesRepId;
+                    testObj.date = dateStr;
+                    testArr.push(Object.values(testObj));
+
+                }
+
+            }
+            return testArr;
+        }
+
+        function parsedPurchaseResponse(parsedResponse, testArr) {
+            if (parsedResponse instanceof Array) {
+                for (i = 0; i < parsedResponse.length; i++) {
+                    var respObj = parsedResponse[i];
+                    var testObj = {};
+                    var dateObj = new Date(parsedResponse[i].createdAt);
+                    var dateStr = (dateObj.getMonth() + 1) + "-" + dateObj.getDate() + "-" + dateObj.getFullYear();
+                    if (parsedResponse[i].buyersOrder && parsedResponse[i].buyersOrder != {}) {
+                        if (parsedResponse[i].buyersOrder.stage) {
+                            if (parsedResponse[i].buyersOrder.stage === "FinalApproval") {
+                                testObj.pacode = parsedResponse[i].buyersOrder.salesPerson.DealerPACode;
+                                testObj.customerName = parsedResponse[i].buyersOrder.customerData.firstName + " " +
+                                    //  parsedResponse[i].buyersOrder.customerData.legalmiddleName + " " +
+                                    parsedResponse[i].buyersOrder.customerData.lastName;
+                                testObj.vehicle = parsedResponse[i].buyersOrder.vehicleDetails.year + " " +
+                                    parsedResponse[i].buyersOrder.vehicleDetails.make + " " +
+                                    parsedResponse[i].buyersOrder.vehicleDetails.model + " " +
+                                    parsedResponse[i].buyersOrder.vehicleDetails.trim;
+                                testObj.checkedInBy = parsedResponse[i].buyersOrder.salesPerson.UserId;
+                                testObj.date = dateStr;
+                                testArr.push(Object.values(testObj));
+                            }
+
+
+                        }
+                    }
+
+
+
+                }
+
+            }
+            return testArr;
+        }
+
+        function parsedApptsResponse(parsedResponse, testArr) {
+            if (parsedResponse instanceof Array) {
+                for (i = 0; i < parsedResponse.length; i++) {
+                    var respObj = parsedResponse[i];
+                    var testObj = {};
+                    for (j = 0; j < respObj.records.length; j++) {
+                        var dataObj = respObj.records[j].data;
+                        var auditObj = respObj.records[j].audit;
+                        var salesRep = dataObj.salesrep[0];
+                        testObj.pacode = auditObj.pacode;
+                        testObj.sourceSystem = dataObj.source;
+                        testObj.appointmentTime = new Date(Number.parseInt(dataObj.appointmentEpoch));
+                        testObj.checkedInBy = salesRep.salesrepCdsId;
+                        testObj.date = new Date(Number.parseInt(auditObj.recordEpoch));
+
+                        testArr.push(Object.values(testObj));
+                    }
+
+                }
+
+            }
+            return testArr;
+        }
+
+        function displayDates(val) {
+            var ele1 = document.getElementById("startDate");
+            var ele2 = document.getElementById("endDate");
+            var ele2Lbl = document.getElementById("endDateLbl");
+            if (val === "aDate") {
+                document.getElementById("endDate").value = null;
+                ele1.style.display = "block";
+                ele2.style.display = "none";
+                ele2Lbl.style.display = "none";
+                document.getElementById("startDateLbl1").style.display = "block";
+                document.getElementById("startDateLbl2").style.display = "none";
+            } else {
+                ele1.style.display = "block";
+                ele2.style.display = "block";
+                ele2Lbl.style.display = "block";
+                document.getElementById("startDateLbl1").style.display = "none";
+                document.getElementById("startDateLbl2").style.display = "block";
+            }
+
+        }
+
+        function showContent() {
+            if (document.getElementById("userId").value === "maestroadmin" 
+            && document.getElementById("pwd").value === "Password1$"){
+                document.getElementById("mainContent").style.display = "block";
+                document.getElementById("loginBlock").style.display = "none";
+                document.getElementById("error").style.display = "none";
+                
+            } else {
+                document.getElementById("error").style.display = "block";
+                document.getElementById('error').innerHTML = "Please enter valid User Credentials!!";
+            }
+        }
+
+    </script>
+</head>
+
+<body>
+    <div>
+        <div class="row">
+            <div class="col-sm-3">
+                <img src="https://forddirect.com/themes/custom/forddirect/img/fd-logo-blue.svg">
+            </div>
+            <div class="col-sm-3" style="padding-top: 6.5px; padding-left: 80px">
+                <h4 style="color: #425968;">Maestro Analytics</h4>
+            </div>
+            <div id="loginBlock" style="padding-top: 6.5px;">
+                <label for="userId" style="color: #425968; font-size: 16px; font-weight: normal"> User ID </label>
+                <input type="text" id="userId">
+                <label for="pwd" style="color: #425968; font-size: 16px; font-weight: normal"> Password </label>
+                <input type="password" id="pwd">
+                <input type="button" value="Submit" onclick="showContent()" />
+            </div>
+
+        </div>
+
+    </div>
+    <div id="error" style="display: none;"></div>
+    <div class="container" id="mainContent" style="display: none;">
+        <br />
+        <div class="row">
+            <label for="scenarioLst" style="color: #425968; font-size: 16px; font-weight: normal">Select</label>
+            <div style="padding-left: 5px">
+                <select id="scenarioLst">
+                    <option value="customers">New Customers</option>
+                    <option value="customer_checkins">Customer checkins</option>
+                    <!--<option value="customer_source">Customers Sources</option> -->
+                    <option value="customer_vehicle_searches">Vehicle Searches</option>
+                    <option value="customer_purchase">Customers purchased the vehicle </option>
+                    <option value="customer_appointments">Customer Appointments </option>
+                </select>
+            </div>
+            <div style="padding-left: 5px">
+                <input type="radio" id="aDate" name="radioGrp" onchange="displayDates('aDate')" checked>
+                <label for="aDate" style="color: #425968; font-size: 16px; font-weight: normal">Enter a Date</label>
+            </div>
+            <div style="padding-left: 5px">
+                <input type="radio" id="dateRange" name="radioGrp" onchange="displayDates('dateRange')">
+                <label for="dateRange" style="color: #425968; font-size: 16px; font-weight: normal">Enter a Date Range</label>
+            </div>
+            <div style="padding-left: 5px">
+                <label for="startDate" id="startDateLbl1" style="display: block; color: #425968; font-size: 16px; font-weight: bold">Date</label>
+            </div>
+
+            <label for="startDate" id="startDateLbl2" style="display: none; color: #425968; font-size: 16px; font-weight: bold">Start Date</label>
+
+            <input type="date" id="startDate">
+
+            <label for="endDate" style="display: none; color: #425968; font-size: 16px; font-weight: bold" id="endDateLbl">End Date</label>
+            <input type="date" id="endDate" style="display: none;">
+
+            <input type="button" value="Submit" onclick="getJSON()" />
+
+        </div>
+        <br />
+        <table id="DisplayResultsTab" class="display" style="width:100%">
+            <thead>
+                <tr>
+                    <th></th>
+                    <th></th>
+                    <th></th>
+                    <th></th>
+                    <th></th>
+                    <th></th>
+                </tr>
+            </thead>
+        </table>
+</body>
+</div>
+</body>
+
+</html>
