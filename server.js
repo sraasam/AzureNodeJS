@@ -9,6 +9,10 @@ app.get("/", (req, res) => {
     res.sendFile(__dirname + "/index.html");
 });
 
+app.listen(port, () => {
+    console.log("Server listening on port " + port);
+});
+
 //Load the respective models 
 /*const customerModule = require('./models/customers');
 const custBudgetModule = require('./models/customerBudget');
@@ -297,8 +301,4 @@ function listAppts(req, res) {
     return apptJson;
 
 }
-
-app.listen(port, () => {
-    console.log("Server listening on port " + port);
-});
 
