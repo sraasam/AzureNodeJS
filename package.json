@@ -4,7 +4,7 @@
   "description": "Node demo showing how to store data into a MongoDB database",
   "main": "server.js",
   "scripts": {
-    "start": "node server"
+    "start": "node server.js"
   },
   "keywords": [
     "node",

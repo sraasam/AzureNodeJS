@@ -1,12 +1,12 @@
 var express = require("express");
 var app = express();
-var port = 1337;
+var port = process.env.PORT || 3000;
 var bodyParser = require('body-parser');
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
 app.get("/", (req, res) => {
-    res.sendFile(__dirname + "/public");
+    res.sendFile(__dirname + "/public/index.html");
 });
 
 app.listen(port, () => {
@@ -14,19 +14,19 @@ app.listen(port, () => {
 });
 
 //Load the respective models 
-/*const customerModule = require('./models/customers');
+const customerModule = require('./models/customers');
 const custBudgetModule = require('./models/customerBudget');
 const custChkinModule = require('./models/customerCheckinInfo');
 const custApptModule = require('./models/customerAppointment');
-const custOrderModule = require('./models/customerOrder');*/
+const custOrderModule = require('./models/customerOrder');
 
 //load mongoose and create the connection object with the respective mongo db
-/*var mongoose = require("mongoose");
+var mongoose = require("mongoose");
 mongoose.Promise = global.Promise;
-mongoose.connect("mongodb://localhost:27017/maestro-local");*/
+mongoose.connect("mongodb://localhost:27017/maestro-local");
 
 //fetch the respective collection objects from Mongo DB for each model accordingly
-/*var customerSchema = new mongoose.Schema(customerModule);
+var customerSchema = new mongoose.Schema(customerModule);
 var Customers = mongoose.model('customers', customerSchema);
 
 var custBudgetSchema = new mongoose.Schema(custBudgetModule);
@@ -39,7 +39,7 @@ var custApptSchema = new mongoose.Schema(custApptModule);
 var CustAppt = mongoose.model('customerappointments', custApptSchema);
 
 var custOrderSchema = new mongoose.Schema(custOrderModule);
-var CustOrder = mongoose.model('customerorders', custOrderSchema);*/
+var CustOrder = mongoose.model('customerorders', custOrderSchema);
 
 
 
